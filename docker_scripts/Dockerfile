@@ -1,5 +1,5 @@
 #FROM ubuntu:18.04
-FROM nvidia/cuda:11.1.1-runtime-ubuntu18.04
+FROM nvidia/cuda:11.1.1-devel-ubuntu18.04
 
 RUN apt-get -y update
 RUN apt-get -y install wget unzip 
@@ -14,14 +14,23 @@ RUN apt-get -y install libgl1-mesa-dev libgl1-mesa-glx libosmesa6-dev patchelf l
 RUN apt-get -y update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y xfce4 tigervnc-standalone-server
 
+# get python 3.8
+RUN apt-get -y install python3.8 python3.8-dev python3.8-distutils
+RUN ln -sv /usr/bin/python3.8 /usr/bin/python
+RUN ln -svf /usr/bin/python3.8 /usr/bin/python3
+RUN alias python3=python3.8
+RUN wget https://bootstrap.pypa.io/get-pip.py && \
+	python get-pip.py && python3 get-pip.py && \
+	rm get-pip.py
+
 RUN apt-get update
 RUN apt-get -y install curl
-RUN apt-get -y install python3-venv
+RUN apt-get -y install python3.8-venv
 RUN apt-get -y install ipython
 
 # drake
 RUN apt-get update
-RUN curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-20210811-bionic.tar.gz
+RUN curl -L -o drake.tar.gz https://github.com/RobotLocomotion/drake/releases/download/v0.33.0/drake-20210811-bionic.tar.gz
 
 # python venv setup with drake
 RUN mkdir -p /python_venvs/tamp
@@ -57,6 +66,17 @@ RUN apt-get update
 RUN apt-get -y install bazel
 RUN apt-get -y install jq
 
+# scipy deps
+RUN apt-get update && apt-get install -y \
+    libblas-dev \
+    liblapack-dev \
+    gfortran
+
+# cuda deps
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libstdc++-6-dev
+
 # pddlstream
 #RUN git clone --recurse-submodules https://github.com/caelan/pddlstream.git pddlstream
 #RUN cd pddlstream && ./FastDownward/build.py release64
@@ -91,13 +111,14 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/$user/.mujoco/mujoco200/bin
 
 WORKDIR /home/$user/
 # start ikea specific stuff #
-RUN git clone https://github.com/BenAgro314/furniture.git
+RUN git clone https://github.com/allenapplehead/furniture.git
 WORKDIR /home/$user/furniture
 RUN git fetch origin aug2020_fixes:aug2020_fixes
 RUN git checkout aug2020_fixes
 RUN ln -s /home/$user/.mujoco/mujoco200 /home/$user/.mujoco/mujoco200_linux
 #RUN pip install --upgrade pip
 RUN pip3 install scikit-build
+RUN pip3 install --upgrade pip setuptools wheel
 RUN pip3 install glfw>=1.4.0 numpy>=1.19.5 Cython>=0.27.2 imageio>=2.1.2 cffi>=1.10 fasteners~=0.15 lockfile
 # copy mujoco license key `mjkey.txt` 
 COPY mjkey.txt /home/$user/.mujoco/mjkey.txt
@@ -108,7 +129,10 @@ WORKDIR /home/$user/
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 RUN pip3 install torch==1.9.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html
-RUN pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html
+
+ENV CUDA_HOME=/usr/local/cuda
+RUN pip install torch-scatter==2.0.9 -f https://data.pyg.org/whl/torch-1.9.0+cu111.html
+RUN pip install torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html
 ENV PYTHONPATH=${PYTHONPATH}:/home/$user/drake-tamp/:/home/$user/drake-tamp/pddlstream/:/home/$user/furniture/:/home/$user/drake-tamp/experiments/ikea_induction/
 
 RUN echo "source /python_venvs/tamp/bin/activate" >> ~/.bashrc
