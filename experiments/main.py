@@ -146,7 +146,7 @@ def make_argument_parser():
     parser.add_argument(
         '--logpath',
         type=str,
-        default=None,
+        default=".",
         required=False,
         help="The directory to save the logs"
     )

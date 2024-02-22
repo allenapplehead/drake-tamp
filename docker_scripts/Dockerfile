@@ -5,7 +5,16 @@ RUN apt-get -y update
 RUN apt-get -y install wget unzip 
 
 RUN apt-get -y update
-RUN apt-get -y install git cmake g++ make
+# RUN apt-get -y install git cmake g++ make
+RUN apt-get -y install git g++ make libssl-dev
+
+# Install CMake 3.20.0
+RUN wget https://github.com/Kitware/CMake/releases/download/v3.20.0/cmake-3.20.0.tar.gz && \
+    tar -zxvf cmake-3.20.0.tar.gz && \
+    cd cmake-3.20.0 && \
+    ./bootstrap && \
+    make -j$(nproc) && \
+    make install
 
 RUN apt-get -y update
 RUN apt-get -y install libgl1-mesa-dev libgl1-mesa-glx libosmesa6-dev patchelf libopenmpi-dev libglew-dev libglfw3 libglfw3-dev
@@ -28,21 +37,32 @@ RUN apt-get -y install curl
 RUN apt-get -y install python3.8-venv
 RUN apt-get -y install ipython
 
-# drake
-RUN apt-get update
-RUN curl -L -o drake.tar.gz https://github.com/RobotLocomotion/drake/releases/download/v0.33.0/drake-20210811-bionic.tar.gz
 
-# python venv setup with drake
+# fixed ompl installation (force 1.5.0)
 RUN mkdir -p /python_venvs/tamp
-RUN tar -xvzf drake.tar.gz -C /python_venvs/tamp --strip-components=1
-RUN yes | /python_venvs/tamp/share/drake/setup/install_prereqs
 WORKDIR /python_venvs/
 RUN python3 -m venv tamp --system-site-packages
 WORKDIR /python_venvs/tamp
-
-# ompl
-RUN wget https://ompl.kavrakilab.org/install-ompl-ubuntu.sh -O /install-ompl-ubuntu.sh
+RUN wget https://gist.githubusercontent.com/allenapplehead/c3ada29d7cc19b3a43bab8f577d7c7a5/raw/43c115c3c598eb886f19c4ef1cd7ee9d1f841e1d/ubuntu.sh -O /install-ompl-ubuntu.sh
 RUN bash /install-ompl-ubuntu.sh --python
+
+
+# # # drake (broken)
+# # RUN apt-get update
+# # RUN curl -L -o drake.tar.gz https://github.com/RobotLocomotion/drake/releases/download/v0.33.0/drake-20210811-bionic.tar.gz
+
+# # python venv setup with drake
+# RUN mkdir -p /python_venvs/tamp
+# # RUN tar -xvzf drake.tar.gz -C /python_venvs/tamp --strip-components=1
+# # RUN yes | /python_venvs/tamp/share/drake/setup/install_prereqs
+# WORKDIR /python_venvs/
+# RUN python3 -m venv tamp --system-site-packages
+# WORKDIR /python_venvs/tamp
+
+# # ompl (broken)
+# RUN wget https://ompl.kavrakilab.org/install-ompl-ubuntu.sh -O /install-ompl-ubuntu.sh
+# RUN bash /install-ompl-ubuntu.sh --python
+
 
 # utilities 
 RUN apt-get update
@@ -132,8 +152,17 @@ RUN pip3 install torch==1.9.0+cu111 -f https://download.pytorch.org/whl/torch_st
 
 ENV CUDA_HOME=/usr/local/cuda
 RUN pip install torch-scatter==2.0.9 -f https://data.pyg.org/whl/torch-1.9.0+cu111.html
-RUN pip install torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html
+RUN pip install torch-sparse==0.6.12 -f https://data.pyg.org/whl/torch-1.9.0+cu111.html
+RUN pip install torch-cluster -f https://data.pyg.org/whl/torch-1.9.0+cu111.html
+RUN pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.0+cu111.html
+RUN pip install torch-geometric -f https://pytorch-geometric.com/whl/torch-1.9.0+cu111.html
 ENV PYTHONPATH=${PYTHONPATH}:/home/$user/drake-tamp/:/home/$user/drake-tamp/pddlstream/:/home/$user/furniture/:/home/$user/drake-tamp/experiments/ikea_induction/
+
+# missing/fix pip installs (make drake happy)
+RUN pip3 install drake
+RUN pip3 install torchvision==0.10.0
+RUN pip3 install matplotlib --upgrade
+RUN pip3 install numpy==1.23.5
 
 RUN echo "source /python_venvs/tamp/bin/activate" >> ~/.bashrc
 RUN echo "export  USER=$user" >> ~/.bashrc

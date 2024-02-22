@@ -1,0 +1,14 @@
+{
+    "name": "Drake-Tamp",
+    "image": "drake-tamp-allentao", // Adjust this line as necessary
+    "appPort": [
+        "2300:22", // Adjust ${port} or specify directly, e.g., "2300:22"
+        "7000:7000"
+    ],
+    "runArgs": [
+        "--shm-size=8G",
+        "--gpus=all",
+        "-v", "/home/${localEnv:USER}/drake-tamp:/home/${localEnv:USER}/drake-tamp" // Adjust paths as necessary
+    ],
+    "postCreateCommand": "/bin/bash"
+}
