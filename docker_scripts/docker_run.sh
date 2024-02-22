@@ -25,7 +25,6 @@ sudo docker run -it \
     --shm-size 8G \
     --gpus all \
     -p $port:22 \
-    -p 7000:7000 \
     --name $name \
     drake-tamp-$USER \
     /bin/bash

@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  drake-tamp:
+    image: drake-tamp-${USER} # Replace with actual image name if ${USER} is not dynamically replaced.
+    container_name: drake-tamp-${USER} # Adjust as necessary
+    ports:
+      - "${port}:22" # SSH port, ensure ${port} is replaced or specified directly, e.g., "2300:22"
+      - "7000:7000" # Additional port mapping
+    volumes:
+      - /home/${USER}/drake-tamp:/home/${USER}/drake-tamp # Adjust paths as necessary
+    shm_size: 8G
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: /bin/bash
